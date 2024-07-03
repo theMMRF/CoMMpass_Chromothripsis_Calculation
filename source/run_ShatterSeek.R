@@ -24,7 +24,7 @@ SV_d <- SV_d |> dplyr::mutate(CHROM = gsub("^chr", "", CHROM))
 SV_d <- SV_d |> dplyr::mutate(CHR2 = gsub("^chr", "", CHR2))
 
 CNAc <- CNAc |> dplyr::mutate(Chromosome = gsub("^chr", "", Chromosome))
-# CNAc <- CNAc |> dplyr::filter(Chromosome != "Y") # shatterseek can't process Y chromosome
+CNAc <- CNAc |> dplyr::filter(Chromosome != "Y") # shatterseek can't process Y chromosome
 CNAc <- CNAc |> dplyr::mutate(copy.number = round(2 * 2^(Segment_Mean)))
 
 
