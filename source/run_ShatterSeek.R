@@ -23,8 +23,11 @@ SV_m <- SV_m |> dplyr::mutate(CHR2 = gsub("^chr", "", CHR2))
 SV_d <- SV_d |> dplyr::mutate(CHROM = gsub("^chr", "", CHROM))
 SV_d <- SV_d |> dplyr::mutate(CHR2 = gsub("^chr", "", CHR2))
 
-CNAc <- CNAc |> dplyr::mutate(chr = gsub("^chr", "", chr))
-CNA <- CNA |> dplyr::mutate(copy.number = round(2 * 2^(Segment_Mean)))
+CNAc <- CNAc |> dplyr::mutate(Chromosome = gsub("^chr", "", Chromosome))
+# CNAc <- CNAc |> dplyr::filter(Chromosome != "Y") # shatterseek can't process Y chromosome
+CNAc <- CNAc |> dplyr::mutate(copy.number = round(2 * 2^(Segment_Mean)))
+
+
 # Convert CT to +/- format
 SV_d <- SV_d |> dplyr::mutate(strand1 = dplyr::case_when(
     CT == "3to3" ~ "+",
@@ -51,21 +54,29 @@ SV_d <- SV_d |> dplyr::mutate(SVTYPE = dplyr::case_when(
 
 # todo - see how to combine the mantra + delly results
 
-all_visits <- unique(CNA$SAMPLE)
+all_visits <- unique(CNAc$SAMPLE)
 chromothripsis_mantra <- list()
 chromothripsis_delly <- list()
 
 
 
 for (i in all_visits) {
-    CNA_tmp <- CNA |> dplyr::filter(SAMPLE == i)
+    CNA_tmp <- CNAc |> dplyr::filter(SAMPLE == i)
     SV_d_tmp <- SV_d |> dplyr::filter(SAMPLE == i)
     SV_m_tmp <- SV_m |> dplyr::filter(SAMPLE == i)
 
+    # CN_data <- CNVsegs(
+    #     chrom = as.character(CNA_tmp$chr),
+    #     start = CNA_tmp$start,
+    #     end = CNA_tmp$end,
+    #     total_cn = CNA_tmp$copy.number
+    # )
+
+
     CN_data <- CNVsegs(
-        chrom = as.character(CNA_tmp$chr),
-        start = CNA_tmp$start,
-        end = CNA_tmp$end,
+        chrom = as.character(CNA_tmp$Chromosome),
+        start = CNA_tmp$Start,
+        end = CNA_tmp$End,
         total_cn = CNA_tmp$copy.number
     )
 
@@ -150,10 +161,6 @@ for (sample in names(chromothripsis_delly)) {
                 number_intrachromosomal_SVs >= 6 &
                 max_number_oscillating_CN_segments_2_states >= 7 &
                 (chr_breakpoint_enrichment < 0.05 | pval_exp_chr < 0.05)
-            # chr_breakpoint_enrichment < 0.05 &
-            # pval_exp_cluster < 0.05 &
-            # number_DEL + number_DUP + number_h2hINV + number_t2tINV >= 3 &
-            # number_TRA >= 4 &
         ), HC2 = (
             number_intrachromosomal_SVs >= 3 &
                 number_TRA >= 4 &
@@ -178,28 +185,3 @@ for (sample in names(chromothripsis_delly)) {
     HC3_calls <- c(HC3_calls, any(chromSum$HC3, na.rm = T))
     LC_calls <- c(LC_calls, any(chromSum$LC, na.rm = T))
 }
-
-data(DO17373)
-### Ex
-SV_data <- SVs(
-    chrom1 = as.character(SV_DO17373$chrom1),
-    pos1 = as.numeric(SV_DO17373$start1),
-    chrom2 = as.character(SV_DO17373$chrom2),
-    pos2 = as.numeric(SV_DO17373$end2),
-    SVtype = as.character(SV_DO17373$svclass),
-    strand1 = as.character(SV_DO17373$strand1),
-    strand2 = as.character(SV_DO17373$strand2)
-)
-
-CN_data <- CNVsegs(
-    chrom = as.character(SCNA_DO17373$chromosome),
-    start = SCNA_DO17373$start,
-    end = SCNA_DO17373$end,
-    total_cn = SCNA_DO17373$total_cn
-)
-
-chromothripsis <- shatterseek(
-    SV.sample = SV_data,
-    seg.sample = CN_data,
-    genome = "hg19"
-)
