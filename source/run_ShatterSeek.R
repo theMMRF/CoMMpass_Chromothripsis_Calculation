@@ -1,3 +1,6 @@
+# As mentioned here: https://ashpublications.org/blood/article/136/Supplement%201/52/471067/Copy-Number-Signatures-Predict-Chromothripsis-and
+# Shatterseek seems to not predict chromothripsis well on the CoMMpass dataset
+
 library(ShatterSeek)
 
 # +: 3', -: 5'
@@ -25,8 +28,14 @@ SV_d <- SV_d |> dplyr::mutate(CHR2 = gsub("^chr", "", CHR2))
 
 CNAc <- CNAc |> dplyr::mutate(Chromosome = gsub("^chr", "", Chromosome))
 CNAc <- CNAc |> dplyr::filter(Chromosome != "Y") # shatterseek can't process Y chromosome
-CNAc <- CNAc |> dplyr::mutate(copy.number = round(2 * 2^(Segment_Mean)))
+CNAc <- CNAc |> dplyr::mutate(copy.number = round(2 * 2^(as.numeric(Segment_Mean))))
 
+CNAc <- CNAc |> dplyr::mutate(copy.number = dplyr::case_when(
+    copy.number > 2 ~ 3,
+    copy.number < 2 ~ 1,
+    copy.number == 2 ~ 2,
+    .default = -1
+))
 
 # Convert CT to +/- format
 SV_d <- SV_d |> dplyr::mutate(strand1 = dplyr::case_when(
